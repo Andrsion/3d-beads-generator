@@ -1,0 +1,36 @@
+name: Build Android APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: npm install && npm run build
+      - name: Generate Android platform
+        run: npx cap add android
+      - run: npx cap sync android
+      - name: Create signing key
+        run: keytool -genkeypair -v -keystore android/app/release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias beads3d -storepass 123456 -keypass 123456 -dname "CN=Beads3D, OU=Dev, O=Beads3D, L=City, S=State, C=CN"
+      - name: Sign and assemble
+        run: |
+          cat >> android/app/build.gradle <<'EOF'
+          android { signingConfigs { release { storeFile file('release-key.jks'); storePassword '123456'; keyAlias 'beads3d'; keyPassword '123456' } }; buildTypes { release { signingConfig signingConfigs.release } } }
+          EOF
+          cd android && chmod +x gradlew && ./gradlew assembleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 3D-Beads-App-APK
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error

@@ -1,0 +1,1 @@
+import type{CapacitorConfig}from'@capacitor/cli';const config:CapacitorConfig={appId:'com.beads3d.maker',appName:'3D立体拼豆',webDir:'dist'};export default config;
